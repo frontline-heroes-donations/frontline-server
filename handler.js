@@ -9,15 +9,20 @@ const CLASSY_API_HOST = 'https://api.classy.org';
 const FRONTLINE_HEROES_CAMPAIGN_ID = 278629;
 
 module.exports.donations = async event => {
+  // console.log('event', event)
+  let page = 1;
+  if (event.queryStringParameters && event.queryStringParameters.page) {
+    page = event.queryStringParameters.page;
+  }
 
-  const page = event.queryStringParameters.page || 1;
   // console.log('page', page);
   const donations = await getDonations(page);
 
   return {
     statusCode: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*'
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET'
     },
     body: JSON.stringify(
       // {
@@ -50,8 +55,17 @@ const getDonations = async (page=1) => {
   // console.log('response', response);
   const donations = response.data.map(donation => {
     const { id, created_at, member, link_text, transaction } = donation;
+
     const anonymous = transaction.is_anonymous;
-    const name = anonymous ? null : `${member.first_name} ${member.last_name}`;
+    let name = null;
+    if (!anonymous) {
+      if (member) {
+        name = `${member.first_name} ${member.last_name}`;
+      } else {
+        name = transaction.member_name;
+      }
+    }
+
     return {
       id: id,
       name: name,
